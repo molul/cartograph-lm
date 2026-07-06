@@ -349,8 +349,8 @@ function fit() {
   });
 }
 
-function download(filename: string) {
-  if (!lastRoot || !lastAssets) return;
+function buildExportHtml() {
+  if (!lastRoot || !lastAssets) return null;
 
   // El HTML exportado se renderiza con su propia copia de markmap-view, así
   // que le añadimos el mismo CSS de cajas y el mismo script de sincronía de
@@ -371,22 +371,37 @@ function download(filename: string) {
     ],
   };
 
-  const html = fillTemplate(lastRoot, assets, {
+  return fillTemplate(lastRoot, assets, {
     jsonOptions: { duration: 300, paddingX: 16 },
   });
+}
 
-  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+function download(filename: string, format: "html" | "txt" = "html") {
+  const html = buildExportHtml();
+  if (!html) return;
+
+  const mimeType = format === "txt" ? "text/plain" : "text/html";
+  const extension = `.${format}`;
+
+  const blob = new Blob([html], { type: `${mimeType};charset=utf-8` });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = filename.endsWith(".html") ? filename : `${filename}.html`;
+  a.download = filename.endsWith(extension) ? filename : `${filename}${extension}`;
   document.body.appendChild(a);
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
 }
 
-defineExpose({ fit, download });
+async function copyHtml() {
+  const html = buildExportHtml();
+  if (!html) return false;
+  await navigator.clipboard.writeText(html);
+  return true;
+}
+
+defineExpose({ fit, download, copyHtml });
 </script>
 
 <template>

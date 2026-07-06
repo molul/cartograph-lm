@@ -1,15 +1,18 @@
 <script setup lang="ts">
-import { nextTick, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 
 const props = defineProps<{
   modelValue: boolean;
   defaultName: string;
+  format?: "html" | "txt";
 }>();
 
 const emit = defineEmits<{
   (e: "update:modelValue", value: boolean): void;
   (e: "confirm", name: string): void;
 }>();
+
+const extension = computed(() => `.${props.format ?? "html"}`);
 
 const name = ref(props.defaultName);
 const inputRef = ref<HTMLInputElement | null>(null);
@@ -30,9 +33,9 @@ function close() {
 }
 
 function confirm() {
-  // El input solo admite el nombre: la extensión .html se añade siempre aparte.
+  // El input solo admite el nombre: la extensión se añade siempre aparte.
   const clean =
-    name.value.trim().replace(/\.html?$/i, "") ||
+    name.value.trim().replace(/\.(html?|txt)$/i, "") ||
     props.defaultName ||
     "mapa-mental";
   emit("confirm", clean);
@@ -55,7 +58,7 @@ function onKeydown(event: KeyboardEvent) {
       class="w-full max-w-sm rounded-sm border border-amber-500/50 bg-ink-light p-5 shadow-2xl"
     >
       <h2 class="font-display text-base font-semibold text-paper">
-        Descargar HTML
+        Descargar {{ (format ?? "html").toUpperCase() }}
       </h2>
       <p class="mt-1 text-xs text-paper/60">Elige el nombre del archivo.</p>
 
@@ -79,7 +82,7 @@ function onKeydown(event: KeyboardEvent) {
           <span
             class="flex select-none items-center whitespace-nowrap bg-ink-lighter px-3 font-mono text-sm text-paper/70"
           >
-            .html
+            {{ extension }}
           </span>
         </div>
       </div>

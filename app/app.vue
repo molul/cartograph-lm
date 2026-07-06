@@ -33,9 +33,13 @@ const fileName = ref("mapa-mental");
 const fileInput = ref<HTMLInputElement | null>(null);
 const canvasRef = ref<{
   fit: () => void;
-  download: (filename: string) => void;
+  download: (filename: string, format?: "html" | "txt") => void;
+  copyHtml: () => Promise<boolean>;
 } | null>(null);
 const showExportDialog = ref(false);
+const exportFormat = ref<"html" | "txt">("html");
+const copyState = ref<"idle" | "copied" | "error">("idle");
+let copyStateTimer: ReturnType<typeof setTimeout> | undefined;
 
 const displayName = computed(() => `${fileName.value}.md`);
 
@@ -59,17 +63,27 @@ function onFileChange(event: Event) {
   input.value = "";
 }
 
-function onDownloadClick() {
+function onDownloadClick(format: "html" | "txt") {
+  exportFormat.value = format;
   showExportDialog.value = true;
 }
 
 function onConfirmDownload(name: string) {
   fileName.value = name;
-  canvasRef.value?.download(name);
+  canvasRef.value?.download(name, exportFormat.value);
 }
 
 function onFit() {
   canvasRef.value?.fit();
+}
+
+async function onCopyHtmlClick() {
+  clearTimeout(copyStateTimer);
+  const ok = await canvasRef.value?.copyHtml();
+  copyState.value = ok ? "copied" : "error";
+  copyStateTimer = setTimeout(() => {
+    copyState.value = "idle";
+  }, 2000);
 }
 </script>
 
@@ -179,9 +193,29 @@ function onFit() {
             <button
               type="button"
               class="rounded-sm bg-amber-500 px-3 py-1.5 font-sans text-xs font-semibold text-ink transition-colors hover:bg-amber-400"
-              @click="onDownloadClick"
+              @click="onDownloadClick('html')"
             >
               Descargar HTML
+            </button>
+            <button
+              type="button"
+              class="rounded-sm bg-amber-500 px-3 py-1.5 font-sans text-xs font-semibold text-ink transition-colors hover:bg-amber-400"
+              @click="onDownloadClick('txt')"
+            >
+              Descargar TXT
+            </button>
+            <button
+              type="button"
+              class="rounded-sm border border-ink-lighter px-3 py-1.5 font-sans text-xs font-medium text-paper/80 transition-colors hover:border-amber-500 hover:text-amber-400"
+              @click="onCopyHtmlClick"
+            >
+              {{
+                copyState === "copied"
+                  ? "¡Copiado!"
+                  : copyState === "error"
+                    ? "Error al copiar"
+                    : "Copiar HTML"
+              }}
             </button>
           </div>
         </div>
@@ -195,6 +229,7 @@ function onFit() {
     <ExportDialog
       v-model="showExportDialog"
       :default-name="fileName"
+      :format="exportFormat"
       @confirm="onConfirmDownload"
     />
   </div>
