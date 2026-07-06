@@ -12,9 +12,124 @@ const svgRef = ref<SVGSVGElement | null>(null);
 
 const transformer = new Transformer();
 let markmap: Markmap | null = null;
+let colorObserver: MutationObserver | null = null;
 // Guardamos el último resultado de la transformación para poder exportarlo
 let lastRoot: ReturnType<Transformer["transform"]>["root"] | null = null;
 let lastAssets: ReturnType<Transformer["getUsedAssets"]> | null = null;
+
+// Estilo "cajas de color" (a la NotebookLM) en vez de las líneas por defecto
+// de markmap. markmap-view pinta el color de cada nodo directamente como
+// atributo `stroke` de su <line>; no hay ninguna variable CSS con ese color,
+// así que lo copiamos a `--mm-node-color` en tiempo de ejecución (ver
+// applyNodeTheme) y el CSS de abajo solo se encarga de dibujar la caja.
+const NODE_THEME_CSS = `
+.markmap-node > line {
+  opacity: 0;
+}
+.markmap-foreign > div > div {
+  background: var(--mm-node-color, #64748b);
+  color: #fff;
+  padding: 3px 10px;
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .25);
+}
+.markmap-link {
+  stroke-opacity: .35;
+}
+`;
+
+// markmap posiciona el <foreignObject> de cada nodo en y=0 dentro de su
+// grupo, dejando su BORDE INFERIOR (no su centro) donde el círculo de
+// plegado y los enlaces se conectan (pensado para una línea de subrayado
+// pegada abajo). Con una caja de color visible eso se ve descentrado.
+// Arreglo: desplazamos el foreignObject hacia abajo la mitad de su propia
+// altura, así su centro pasa a coincidir con ese punto de conexión, sin
+// tocar el círculo ni los enlaces (que markmap sí recalcula en cada
+// render y nos pisaría el cambio).
+function centerNodeBoxes(container: Element) {
+  container
+    .querySelectorAll("foreignObject.markmap-foreign")
+    .forEach((foreign) => {
+      const height = parseFloat(foreign.getAttribute("height") || "0");
+      if (!height) return;
+      const y = height / 2;
+      if (foreign.getAttribute("y") !== String(y)) {
+        foreign.setAttribute("y", String(y));
+      }
+    });
+}
+
+// Copia el color que markmap ya asignó a la <line> de cada nodo hacia la
+// caja de fondo del texto (no existe ninguna variable CSS con ese color,
+// se aplica directamente como atributo `stroke`).
+function syncNodeColors(container: Element) {
+  container.querySelectorAll("g.markmap-node").forEach((node) => {
+    const line = node.querySelector(":scope > line");
+    const box = node.querySelector(
+      ":scope > foreignObject.markmap-foreign > div > div",
+    ) as HTMLElement | null;
+    const color = line?.getAttribute("stroke");
+    if (box && color) box.style.setProperty("--mm-node-color", color);
+  });
+}
+
+function applyNodeTheme(container: Element) {
+  centerNodeBoxes(container);
+  syncNodeColors(container);
+}
+
+// Observa el árbol del SVG y reaplica el tema cada vez que markmap toca el
+// tamaño (`height`) de un nodo o añade nodos nuevos —al plegar/desplegar
+// una rama, o en el reflow interno que dispara al terminar de cargar las
+// fuentes web—, sin pasar por nuestro código.
+function observeNodeTheme(container: Element) {
+  applyNodeTheme(container);
+  const observer = new MutationObserver(() => applyNodeTheme(container));
+  observer.observe(container, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ["height"],
+  });
+  return observer;
+}
+
+// Misma lógica, pero autocontenida para incrustarla como <script> en el
+// HTML exportado (fillTemplate la serializa con Function.prototype.toString,
+// así que no puede depender de nada externo ni de closures).
+function exportThemeScript() {
+  function applyNodeTheme(container: Element) {
+    container
+      .querySelectorAll("foreignObject.markmap-foreign")
+      .forEach((foreign) => {
+        const height = parseFloat(foreign.getAttribute("height") || "0");
+        if (!height) return;
+        const y = height / 2;
+        if (foreign.getAttribute("y") !== String(y)) {
+          foreign.setAttribute("y", String(y));
+        }
+      });
+
+    container.querySelectorAll("g.markmap-node").forEach((node) => {
+      const line = node.querySelector(":scope > line");
+      const box = node.querySelector(
+        ":scope > foreignObject.markmap-foreign > div > div",
+      ) as HTMLElement | null;
+      const color = line?.getAttribute("stroke");
+      if (box && color) box.style.setProperty("--mm-node-color", color);
+    });
+  }
+
+  const svg = document.querySelector("svg#mindmap");
+  if (!svg) return;
+  applyNodeTheme(svg);
+  new MutationObserver(() => applyNodeTheme(svg)).observe(svg, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ["height"],
+  });
+}
 
 // markmap-view trae su propio ResizeObserver interno que puede disparar un
 // renderData() por su cuenta (p. ej. cuando terminan de cargar las fuentes
@@ -42,6 +157,8 @@ function createMarkmap(svg: SVGSVGElement) {
     duration: 300,
     maxWidth: 320,
     autoFit: true,
+    paddingX: 16,
+    style: () => NODE_THEME_CSS,
   });
 }
 
@@ -53,6 +170,7 @@ async function renderMarkdown(markdown: string) {
   if (!markmap) return;
   await markmap.setData(root);
   markmap.fit();
+  if (svgRef.value) applyNodeTheme(svgRef.value);
 }
 
 let debounceTimer: ReturnType<typeof setTimeout> | undefined;
@@ -61,6 +179,7 @@ onMounted(() => {
   setTimeout(() => {
     if (svgRef.value) {
       markmap = createMarkmap(svgRef.value);
+      colorObserver = observeNodeTheme(svgRef.value);
     }
     queue(() => renderMarkdown(props.markdown));
   }, 500);
@@ -68,6 +187,8 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   clearTimeout(debounceTimer);
+  colorObserver?.disconnect();
+  colorObserver = null;
   markmap?.destroy();
   markmap = null;
 });
@@ -95,8 +216,24 @@ function fit() {
 function download(filename: string) {
   if (!lastRoot || !lastAssets) return;
 
-  const html = fillTemplate(lastRoot, lastAssets, {
-    jsonOptions: { duration: 300 },
+  // El HTML exportado se renderiza con su propia copia de markmap-view, así
+  // que le añadimos el mismo CSS de cajas y el mismo script de sincronía de
+  // color para que el archivo descargado tenga el mismo aspecto que la
+  // preview.
+  const assets = {
+    ...lastAssets,
+    styles: [
+      ...(lastAssets.styles ?? []),
+      { type: "style" as const, data: NODE_THEME_CSS },
+    ],
+    scripts: [
+      ...(lastAssets.scripts ?? []),
+      { type: "iife" as const, data: { fn: exportThemeScript } },
+    ],
+  };
+
+  const html = fillTemplate(lastRoot, assets, {
+    jsonOptions: { duration: 300, paddingX: 16 },
   });
 
   const blob = new Blob([html], { type: "text/html;charset=utf-8" });
