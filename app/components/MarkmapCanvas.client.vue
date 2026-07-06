@@ -373,6 +373,16 @@ function fit() {
 function buildExportHtml() {
   if (!lastRoot || !lastAssets) return null;
 
+  // Por defecto fillTemplate carga d3 y markmap-view desde jsdelivr. Para no
+  // depender de que ese CDN siga sirviendo esas versiones para siempre,
+  // apuntamos en su lugar a nuestra propia copia (ver public/vendor/,
+  // sincronizada desde node_modules por scripts/sync-vendor.mjs). Usamos
+  // location.origin en vez de una URL fija: el HTML exportado se abre fuera
+  // de esta app (como archivo local o en cualquier navegador), así que la
+  // ruta tiene que ser absoluta, pero así apunta siempre a donde esté
+  // desplegada la app en cada momento (producción, preview, localhost...).
+  const vendorBaseUrl = new URL("/vendor/", window.location.origin).href;
+
   // El HTML exportado se renderiza con su propia copia de markmap-view, así
   // que le añadimos el mismo CSS de cajas y el mismo script de sincronía de
   // color para que el archivo descargado tenga el mismo aspecto que la
@@ -394,6 +404,10 @@ function buildExportHtml() {
 
   return fillTemplate(lastRoot, assets, {
     jsonOptions: { duration: 300, paddingX: 16 },
+    baseJs: [
+      { type: "script", data: { src: `${vendorBaseUrl}d3.min.js` } },
+      { type: "script", data: { src: `${vendorBaseUrl}markmap-view.min.js` } },
+    ],
   });
 }
 
