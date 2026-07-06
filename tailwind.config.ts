@@ -16,11 +16,6 @@ export default <Partial<Config>>{
           DEFAULT: '#F7F3EA',
           dark: '#EDE6D6',
         },
-        brass: {
-          DEFAULT: '#B08D57',
-          light: '#C7A876',
-          dark: '#8C6F41',
-        },
       },
       fontFamily: {
         display: ['"Fraunces"', 'ui-serif', 'serif'],

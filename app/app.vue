@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref } from "vue";
 
 const DEFAULT_MARKDOWN = `# Cartograph
 
@@ -16,62 +16,83 @@ const DEFAULT_MARKDOWN = `# Cartograph
 ## Exportar
 - Pulsa "Descargar HTML" para guardar un archivo autónomo
 - Ese archivo abre el mismo mapa interactivo en cualquier navegador
-`
+`;
 
-const markdown = ref(DEFAULT_MARKDOWN)
-const fileName = ref('mapa-mental')
-const fileInput = ref<HTMLInputElement | null>(null)
-const canvasRef = ref<{ fit: () => void; download: (filename: string) => void } | null>(null)
-const showExportDialog = ref(false)
+const markdown = ref(DEFAULT_MARKDOWN);
+const fileName = ref("mapa-mental");
+const fileInput = ref<HTMLInputElement | null>(null);
+const canvasRef = ref<{
+  fit: () => void;
+  download: (filename: string) => void;
+} | null>(null);
+const showExportDialog = ref(false);
 
-const displayName = computed(() => `${fileName.value}.md`)
+const displayName = computed(() => `${fileName.value}.md`);
 
 function triggerUpload() {
-  fileInput.value?.click()
+  fileInput.value?.click();
 }
 
 function onFileChange(event: Event) {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (!file) return
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
 
-  const reader = new FileReader()
+  const reader = new FileReader();
   reader.onload = () => {
-    markdown.value = String(reader.result ?? '')
-    fileName.value = file.name.replace(/\.(md|markdown)$/i, '')
-  }
-  reader.readAsText(file)
+    markdown.value = String(reader.result ?? "");
+    fileName.value = file.name.replace(/\.(md|markdown)$/i, "");
+  };
+  reader.readAsText(file);
 
   // Permite volver a cargar el mismo archivo si se modifica y se reintenta
-  input.value = ''
+  input.value = "";
 }
 
 function onDownloadClick() {
-  showExportDialog.value = true
+  showExportDialog.value = true;
 }
 
 function onConfirmDownload(name: string) {
-  fileName.value = name
-  canvasRef.value?.download(name)
+  fileName.value = name;
+  canvasRef.value?.download(name);
 }
 
 function onFit() {
-  canvasRef.value?.fit()
+  canvasRef.value?.fit();
 }
 </script>
 
 <template>
   <div class="flex h-screen flex-col bg-ink">
     <!-- Barra superior -->
-    <header class="flex h-14 shrink-0 items-center gap-3 border-b-2 border-brass bg-ink px-5">
-      <svg viewBox="0 0 24 24" class="h-6 w-6 shrink-0 text-brass" fill="none" stroke="currentColor" stroke-width="1.4">
+    <header
+      class="flex h-14 shrink-0 items-center gap-3 border-b-2 border-amber-500 bg-ink px-5"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        class="h-6 w-6 shrink-0 text-amber-500"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.4"
+      >
         <circle cx="12" cy="12" r="9" />
         <path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21" />
-        <path d="M12 12l4.5-6.5L12 12l-4.5 6.5L12 12z" fill="currentColor" stroke="none" />
+        <path
+          d="M12 12l4.5-6.5L12 12l-4.5 6.5L12 12z"
+          fill="currentColor"
+          stroke="none"
+        />
       </svg>
       <div class="leading-tight">
-        <h1 class="font-display text-lg font-semibold tracking-wide text-paper">Cartograph</h1>
-        <p class="font-sans text-[11px] uppercase tracking-[0.18em] text-brass-light">Markdown → mapa mental</p>
+        <h1 class="font-display text-lg font-semibold tracking-wide text-paper">
+          Cartograph
+        </h1>
+        <p
+          class="font-sans text-[11px] uppercase tracking-[0.18em] text-amber-400"
+        >
+          Conversor de mapas mentales de Markdown a HTML
+        </p>
       </div>
     </header>
 
@@ -79,14 +100,22 @@ function onFit() {
     <div class="flex min-h-0 flex-1">
       <!-- Panel izquierdo: fuente Markdown -->
       <section class="flex w-2/5 min-w-[320px] flex-col bg-ink">
-        <div class="flex shrink-0 items-center justify-between gap-3 border-b border-ink-lighter px-4 py-3">
+        <div
+          class="flex shrink-0 items-center justify-between gap-3 border-b border-ink-lighter px-4 py-3"
+        >
           <div class="flex items-center gap-2 overflow-hidden">
-            <span class="font-sans text-[11px] uppercase tracking-[0.16em] text-brass-light">Fuente</span>
-            <span class="truncate rounded-sm bg-ink-light px-2 py-0.5 font-mono text-xs text-paper/80">{{ displayName }}</span>
+            <span
+              class="font-sans text-[11px] uppercase tracking-[0.16em] text-amber-400"
+              >Fuente</span
+            >
+            <span
+              class="truncate rounded-sm bg-ink-light px-2 py-0.5 font-mono text-xs text-paper/80"
+              >{{ displayName }}</span
+            >
           </div>
           <button
             type="button"
-            class="shrink-0 rounded-sm border border-brass px-3 py-1.5 font-sans text-xs font-medium text-brass-light transition-colors hover:bg-brass hover:text-ink"
+            class="shrink-0 rounded-sm border border-amber-500 px-3 py-1.5 font-sans text-xs font-medium text-amber-400 transition-colors hover:bg-amber-500 hover:text-ink"
             @click="triggerUpload"
           >
             Cargar .md
@@ -97,7 +126,7 @@ function onFit() {
             accept=".md,.markdown,text/markdown"
             class="hidden"
             @change="onFileChange"
-          >
+          />
         </div>
 
         <textarea
@@ -109,20 +138,25 @@ function onFit() {
       </section>
 
       <!-- Panel derecho: mapa mental -->
-      <section class="flex flex-1 flex-col border-l-2 border-brass">
-        <div class="flex shrink-0 items-center justify-between gap-3 border-b border-brass/40 bg-ink px-4 py-3">
-          <span class="font-sans text-[11px] uppercase tracking-[0.16em] text-brass-light">Mapa mental</span>
+      <section class="flex flex-1 flex-col border-l-2 border-amber-500">
+        <div
+          class="flex shrink-0 items-center justify-between gap-3 border-b border-amber-500/40 bg-ink px-4 py-3"
+        >
+          <span
+            class="font-sans text-[11px] uppercase tracking-[0.16em] text-amber-400"
+            >Mapa mental</span
+          >
           <div class="flex items-center gap-2">
             <button
               type="button"
-              class="rounded-sm border border-ink-lighter px-3 py-1.5 font-sans text-xs font-medium text-paper/80 transition-colors hover:border-brass hover:text-brass-light"
+              class="rounded-sm border border-ink-lighter px-3 py-1.5 font-sans text-xs font-medium text-paper/80 transition-colors hover:border-amber-500 hover:text-amber-400"
               @click="onFit"
             >
               Centrar
             </button>
             <button
               type="button"
-              class="rounded-sm bg-brass px-3 py-1.5 font-sans text-xs font-semibold text-ink transition-colors hover:bg-brass-light"
+              class="rounded-sm bg-amber-500 px-3 py-1.5 font-sans text-xs font-semibold text-ink transition-colors hover:bg-amber-400"
               @click="onDownloadClick"
             >
               Descargar HTML
