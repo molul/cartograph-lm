@@ -28,7 +28,7 @@ const THEME_OPTIONS: { value: ThemeId; label: string }[] = [
 ];
 
 const markdown = ref(DEFAULT_MARKDOWN);
-const theme = ref<ThemeId>("rainbow");
+const theme = ref<ThemeId>("byLevel");
 const fileName = ref("mapa-mental");
 const fileInput = ref<HTMLInputElement | null>(null);
 const canvasRef = ref<{
