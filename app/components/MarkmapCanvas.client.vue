@@ -16,13 +16,17 @@ let markmap: Markmap | null = null
 let lastRoot: ReturnType<Transformer['transform']>['root'] | null = null
 let lastAssets: ReturnType<Transformer['getUsedAssets']> | null = null
 
-function renderMarkdown(markdown: string) {
+async function renderMarkdown(markdown: string) {
   const { root, features } = transformer.transform(markdown)
   lastRoot = root
   lastAssets = transformer.getUsedAssets(features)
 
   if (markmap) {
-    markmap.setData(root)
+    // OJO: setData() es async y solo calcula el bounding box real del
+    // árbol tras un requestAnimationFrame interno. Si se llama a fit()
+    // sin esperar a que termine, la cámara se centra sobre un rect
+    // todavía a cero y el mapa queda fuera de la vista (lienzo en blanco).
+    await markmap.setData(root)
     markmap.fit()
   }
 }

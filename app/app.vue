@@ -22,6 +22,7 @@ const markdown = ref(DEFAULT_MARKDOWN)
 const fileName = ref('mapa-mental')
 const fileInput = ref<HTMLInputElement | null>(null)
 const canvasRef = ref<{ fit: () => void; download: (filename: string) => void } | null>(null)
+const showExportDialog = ref(false)
 
 const displayName = computed(() => `${fileName.value}.md`)
 
@@ -45,8 +46,13 @@ function onFileChange(event: Event) {
   input.value = ''
 }
 
-function onDownload() {
-  canvasRef.value?.download(fileName.value)
+function onDownloadClick() {
+  showExportDialog.value = true
+}
+
+function onConfirmDownload(name: string) {
+  fileName.value = name
+  canvasRef.value?.download(name)
 }
 
 function onFit() {
@@ -117,7 +123,7 @@ function onFit() {
             <button
               type="button"
               class="rounded-sm bg-brass px-3 py-1.5 font-sans text-xs font-semibold text-ink transition-colors hover:bg-brass-light"
-              @click="onDownload"
+              @click="onDownloadClick"
             >
               Descargar HTML
             </button>
@@ -129,5 +135,11 @@ function onFit() {
         </div>
       </section>
     </div>
+
+    <ExportDialog
+      v-model="showExportDialog"
+      :default-name="fileName"
+      @confirm="onConfirmDownload"
+    />
   </div>
 </template>
