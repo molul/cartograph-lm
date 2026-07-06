@@ -13,6 +13,7 @@ export default defineNuxtConfig({
         { name: 'description', content: 'Carga un archivo Markdown y explóralo como un mapa mental interactivo, descargable como HTML.' },
       ],
       link: [
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: 'anonymous' },
         {
