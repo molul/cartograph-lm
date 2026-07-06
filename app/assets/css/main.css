@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #__nuxt {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Cuadrícula sutil tipo papel milimetrado para el lienzo del mapa */
+.paper-grid {
+  background-color: #F7F3EA;
+  background-image: radial-gradient(circle, rgba(27, 36, 48, 0.10) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* Scrollbar discreto para el editor Markdown */
+.editor-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+.editor-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.editor-scroll::-webkit-scrollbar-thumb {
+  background-color: #3A4759;
+  border-radius: 2px;
+}
+
+/* El SVG de markmap debe ocupar todo el contenedor */
+.markmap-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.markmap-svg text {
+  font-family: "Inter", ui-sans-serif, sans-serif;
+}
