@@ -99,19 +99,32 @@ function resolveColor(
 // grupo, dejando su BORDE INFERIOR (no su centro) donde el círculo de
 // plegado y los enlaces se conectan (pensado para una línea de subrayado
 // pegada abajo). Con una caja de color visible eso se ve descentrado, así
-// que desplazamos el foreignObject hacia abajo la mitad de su propia
-// altura para que su centro coincida con ese punto de conexión.
+// que desplazamos el foreignObject hacia abajo para que su centro coincida
+// con ese punto de conexión.
+//
+// El desplazamiento necesario es la mitad de la altura de la caja, pero NO
+// podemos usar la altura de CADA caja: markmap reserva a cada nodo un hueco
+// vertical basado solo en su propia altura (sin contar este desplazamiento),
+// así que una caja de varias líneas se desplazaría mucho más que sus
+// vecinas y acabaría invadiendo el hueco del siguiente nodo del árbol. Para
+// evitarlo, usamos como referencia la altura del nodo MÁS PEQUEÑO del árbol
+// (que siempre es de una sola línea) y desplazamos todas las cajas por
+// igual esa misma cantidad fija.
 function applyNodeTheme(container: Element, theme: ThemeId) {
-  container
-    .querySelectorAll("foreignObject.markmap-foreign")
-    .forEach((foreign) => {
-      const height = parseFloat(foreign.getAttribute("height") || "0");
-      if (!height) return;
-      const y = height / 2;
-      if (foreign.getAttribute("y") !== String(y)) {
-        foreign.setAttribute("y", String(y));
-      }
-    });
+  const foreignObjects = [
+    ...container.querySelectorAll("foreignObject.markmap-foreign"),
+  ];
+  const heights = foreignObjects
+    .map((foreign) => parseFloat(foreign.getAttribute("height") || "0"))
+    .filter((height) => height > 0);
+  const shift = heights.length ? Math.min(...heights) / 2 : 0;
+
+  foreignObjects.forEach((foreign) => {
+    if (!parseFloat(foreign.getAttribute("height") || "0")) return;
+    if (foreign.getAttribute("y") !== String(shift)) {
+      foreign.setAttribute("y", String(shift));
+    }
+  });
 
   const rainbowCache = new Map<string, string>();
   const colorByPath = new Map<string, string>();
@@ -207,16 +220,20 @@ function exportThemeScript(themeArg: unknown) {
   }
 
   function applyNodeTheme(container: Element) {
-    container
-      .querySelectorAll("foreignObject.markmap-foreign")
-      .forEach((foreign) => {
-        const height = parseFloat(foreign.getAttribute("height") || "0");
-        if (!height) return;
-        const y = height / 2;
-        if (foreign.getAttribute("y") !== String(y)) {
-          foreign.setAttribute("y", String(y));
-        }
-      });
+    const foreignObjects = [
+      ...container.querySelectorAll("foreignObject.markmap-foreign"),
+    ];
+    const heights = foreignObjects
+      .map((foreign) => parseFloat(foreign.getAttribute("height") || "0"))
+      .filter((height) => height > 0);
+    const shift = heights.length ? Math.min(...heights) / 2 : 0;
+
+    foreignObjects.forEach((foreign) => {
+      if (!parseFloat(foreign.getAttribute("height") || "0")) return;
+      if (foreign.getAttribute("y") !== String(shift)) {
+        foreign.setAttribute("y", String(shift));
+      }
+    });
 
     const rainbowCache = new Map<string, string>();
     const colorByPath = new Map<string, string>();
