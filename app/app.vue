@@ -18,7 +18,17 @@ const DEFAULT_MARKDOWN = `# Cartograph
 - Ese archivo abre el mismo mapa interactivo en cualquier navegador
 `;
 
+type ThemeId = "rainbow" | "byLevel" | "gray" | "grayByLevel";
+
+const THEME_OPTIONS: { value: ThemeId; label: string }[] = [
+  { value: "rainbow", label: "Arco iris" },
+  { value: "byLevel", label: "Colores por nivel" },
+  { value: "gray", label: "Grises" },
+  { value: "grayByLevel", label: "Grises por nivel" },
+];
+
 const markdown = ref(DEFAULT_MARKDOWN);
+const theme = ref<ThemeId>("rainbow");
 const fileName = ref("mapa-mental");
 const fileInput = ref<HTMLInputElement | null>(null);
 const canvasRef = ref<{
@@ -147,6 +157,18 @@ function onFit() {
             >Mapa mental</span
           >
           <div class="flex items-center gap-2">
+            <select
+              v-model="theme"
+              class="rounded-sm border border-ink-lighter bg-ink px-2 py-1.5 font-sans text-xs font-medium text-paper/80 outline-none transition-colors hover:border-amber-500 hover:text-amber-400"
+            >
+              <option
+                v-for="option in THEME_OPTIONS"
+                :key="option.value"
+                :value="option.value"
+              >
+                {{ option.label }}
+              </option>
+            </select>
             <button
               type="button"
               class="rounded-sm border border-ink-lighter px-3 py-1.5 font-sans text-xs font-medium text-paper/80 transition-colors hover:border-amber-500 hover:text-amber-400"
@@ -165,7 +187,7 @@ function onFit() {
         </div>
 
         <div class="paper-grid relative min-h-0 flex-1">
-          <MarkmapCanvas ref="canvasRef" :markdown="markdown" />
+          <MarkmapCanvas ref="canvasRef" :markdown="markdown" :theme="theme" />
         </div>
       </section>
     </div>

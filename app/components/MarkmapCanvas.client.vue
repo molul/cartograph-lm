@@ -4,8 +4,11 @@ import { Transformer } from "markmap-lib";
 import { Markmap } from "markmap-view";
 import { fillTemplate } from "markmap-render";
 
+type ThemeId = "rainbow" | "byLevel" | "gray" | "grayByLevel";
+
 const props = defineProps<{
   markdown: string;
+  theme: ThemeId;
 }>();
 
 const svgRef = ref<SVGSVGElement | null>(null);
@@ -18,10 +21,9 @@ let lastRoot: ReturnType<Transformer["transform"]>["root"] | null = null;
 let lastAssets: ReturnType<Transformer["getUsedAssets"]> | null = null;
 
 // Estilo "cajas de color" (a la NotebookLM) en vez de las líneas por defecto
-// de markmap. markmap-view pinta el color de cada nodo directamente como
-// atributo `stroke` de su <line>; no hay ninguna variable CSS con ese color,
-// así que lo copiamos a `--mm-node-color` en tiempo de ejecución (ver
-// applyNodeTheme) y el CSS de abajo solo se encarga de dibujar la caja.
+// de markmap. El color en sí lo calcula applyNodeTheme y lo deja en la
+// variable CSS `--mm-node-color`; este bloque solo se encarga de dibujar
+// la caja con esa variable.
 const NODE_THEME_CSS = `
 .markmap-node > line {
   opacity: 0;
@@ -38,15 +40,64 @@ const NODE_THEME_CSS = `
 }
 `;
 
+// Paletas para cada tema. "rainbow" asigna un color distinto por nodo (por
+// orden de aparición, como hacía markmap por defecto); el resto dependen
+// solo de la profundidad.
+const RAINBOW_PALETTE = [
+  "#1f77b4",
+  "#ff7f0e",
+  "#2ca02c",
+  "#d62728",
+  "#9467bd",
+  "#8c564b",
+  "#e377c2",
+  "#7f7f7f",
+  "#bcbd22",
+  "#17becf",
+];
+const LEVEL_PALETTE = [
+  "#2563eb",
+  "#dc2626",
+  "#16a34a",
+  "#d97706",
+  "#7c3aed",
+  "#0891b2",
+  "#db2777",
+  "#65a30d",
+];
+const GRAY_UNIFORM = "#52525b";
+const GRAY_LEVEL_PALETTE = ["#27272a", "#3f3f46", "#52525b", "#71717a", "#a1a1aa"];
+
+function resolveColor(
+  theme: ThemeId,
+  path: string,
+  depth: number,
+  rainbowCache: Map<string, string>,
+) {
+  if (theme === "byLevel") return LEVEL_PALETTE[(depth - 1) % LEVEL_PALETTE.length];
+  if (theme === "gray") return GRAY_UNIFORM;
+  if (theme === "grayByLevel") {
+    return GRAY_LEVEL_PALETTE[Math.min(depth - 1, GRAY_LEVEL_PALETTE.length - 1)];
+  }
+  if (!rainbowCache.has(path)) {
+    rainbowCache.set(path, RAINBOW_PALETTE[rainbowCache.size % RAINBOW_PALETTE.length]);
+  }
+  return rainbowCache.get(path)!;
+}
+
+// Aplica el tema elegido (color de caja/línea/círculo/enlace) y corrige el
+// centrado vertical de la caja. No dependemos del `color` interno de
+// markmap: lo calculamos nosotros a partir de data-path/data-depth (que
+// markmap ya deja en el DOM) para poder ofrecer temas -por nivel, grises-
+// que la librería no soporta de forma nativa.
+//
 // markmap posiciona el <foreignObject> de cada nodo en y=0 dentro de su
 // grupo, dejando su BORDE INFERIOR (no su centro) donde el círculo de
 // plegado y los enlaces se conectan (pensado para una línea de subrayado
-// pegada abajo). Con una caja de color visible eso se ve descentrado.
-// Arreglo: desplazamos el foreignObject hacia abajo la mitad de su propia
-// altura, así su centro pasa a coincidir con ese punto de conexión, sin
-// tocar el círculo ni los enlaces (que markmap sí recalcula en cada
-// render y nos pisaría el cambio).
-function centerNodeBoxes(container: Element) {
+// pegada abajo). Con una caja de color visible eso se ve descentrado, así
+// que desplazamos el foreignObject hacia abajo la mitad de su propia
+// altura para que su centro coincida con ese punto de conexión.
+function applyNodeTheme(container: Element, theme: ThemeId) {
   container
     .querySelectorAll("foreignObject.markmap-foreign")
     .forEach((foreign) => {
@@ -57,34 +108,48 @@ function centerNodeBoxes(container: Element) {
         foreign.setAttribute("y", String(y));
       }
     });
-}
 
-// Copia el color que markmap ya asignó a la <line> de cada nodo hacia la
-// caja de fondo del texto (no existe ninguna variable CSS con ese color,
-// se aplica directamente como atributo `stroke`).
-function syncNodeColors(container: Element) {
+  const rainbowCache = new Map<string, string>();
+  const colorByPath = new Map<string, string>();
+
   container.querySelectorAll("g.markmap-node").forEach((node) => {
-    const line = node.querySelector(":scope > line");
+    const path = node.getAttribute("data-path") || "";
+    const depth = parseInt(node.getAttribute("data-depth") || "1", 10);
+    const color = resolveColor(theme, path, depth, rainbowCache);
+    colorByPath.set(path, color);
+
     const box = node.querySelector(
       ":scope > foreignObject.markmap-foreign > div > div",
     ) as HTMLElement | null;
-    const color = line?.getAttribute("stroke");
-    if (box && color) box.style.setProperty("--mm-node-color", color);
-  });
-}
+    box?.style.setProperty("--mm-node-color", color);
 
-function applyNodeTheme(container: Element) {
-  centerNodeBoxes(container);
-  syncNodeColors(container);
+    const line = node.querySelector(":scope > line");
+    line?.setAttribute("stroke", color);
+
+    const circle = node.querySelector(":scope > circle");
+    if (circle) {
+      circle.setAttribute("stroke", color);
+      if (circle.getAttribute("fill") !== "var(--markmap-circle-open-bg)") {
+        circle.setAttribute("fill", color);
+      }
+    }
+  });
+
+  container.querySelectorAll("path.markmap-link").forEach((link) => {
+    const childPath = link.getAttribute("data-path");
+    const color = childPath ? colorByPath.get(childPath) : undefined;
+    if (color) link.setAttribute("stroke", color);
+  });
 }
 
 // Observa el árbol del SVG y reaplica el tema cada vez que markmap toca el
 // tamaño (`height`) de un nodo o añade nodos nuevos —al plegar/desplegar
 // una rama, o en el reflow interno que dispara al terminar de cargar las
-// fuentes web—, sin pasar por nuestro código.
-function observeNodeTheme(container: Element) {
-  applyNodeTheme(container);
-  const observer = new MutationObserver(() => applyNodeTheme(container));
+// fuentes web—, sin pasar por nuestro código. `getTheme` se consulta en
+// cada pasada para reflejar siempre el tema seleccionado en ese momento.
+function observeNodeTheme(container: Element, getTheme: () => ThemeId) {
+  applyNodeTheme(container, getTheme());
+  const observer = new MutationObserver(() => applyNodeTheme(container, getTheme()));
   observer.observe(container, {
     childList: true,
     subtree: true,
@@ -96,8 +161,47 @@ function observeNodeTheme(container: Element) {
 
 // Misma lógica, pero autocontenida para incrustarla como <script> en el
 // HTML exportado (fillTemplate la serializa con Function.prototype.toString,
-// así que no puede depender de nada externo ni de closures).
-function exportThemeScript() {
+// así que no puede depender de nada externo ni de closures). El tema se
+// recibe como argumento, fijado al valor elegido en el momento de exportar.
+function exportThemeScript(themeArg: unknown) {
+  const theme = themeArg as ThemeId;
+  const RAINBOW_PALETTE = [
+    "#1f77b4",
+    "#ff7f0e",
+    "#2ca02c",
+    "#d62728",
+    "#9467bd",
+    "#8c564b",
+    "#e377c2",
+    "#7f7f7f",
+    "#bcbd22",
+    "#17becf",
+  ];
+  const LEVEL_PALETTE = [
+    "#2563eb",
+    "#dc2626",
+    "#16a34a",
+    "#d97706",
+    "#7c3aed",
+    "#0891b2",
+    "#db2777",
+    "#65a30d",
+  ];
+  const GRAY_UNIFORM = "#52525b";
+  const GRAY_LEVEL_PALETTE = ["#27272a", "#3f3f46", "#52525b", "#71717a", "#a1a1aa"];
+
+  function resolveColor(path: string, depth: number, rainbowCache: Map<string, string>) {
+    if (theme === "byLevel") return LEVEL_PALETTE[(depth - 1) % LEVEL_PALETTE.length];
+    if (theme === "gray") return GRAY_UNIFORM;
+    if (theme === "grayByLevel") {
+      return GRAY_LEVEL_PALETTE[Math.min(depth - 1, GRAY_LEVEL_PALETTE.length - 1)];
+    }
+    if (!rainbowCache.has(path)) {
+      rainbowCache.set(path, RAINBOW_PALETTE[rainbowCache.size % RAINBOW_PALETTE.length]);
+    }
+    return rainbowCache.get(path)!;
+  }
+
   function applyNodeTheme(container: Element) {
     container
       .querySelectorAll("foreignObject.markmap-foreign")
@@ -110,13 +214,36 @@ function exportThemeScript() {
         }
       });
 
+    const rainbowCache = new Map<string, string>();
+    const colorByPath = new Map<string, string>();
+
     container.querySelectorAll("g.markmap-node").forEach((node) => {
-      const line = node.querySelector(":scope > line");
+      const path = node.getAttribute("data-path") || "";
+      const depth = parseInt(node.getAttribute("data-depth") || "1", 10);
+      const color = resolveColor(path, depth, rainbowCache);
+      colorByPath.set(path, color);
+
       const box = node.querySelector(
         ":scope > foreignObject.markmap-foreign > div > div",
       ) as HTMLElement | null;
-      const color = line?.getAttribute("stroke");
-      if (box && color) box.style.setProperty("--mm-node-color", color);
+      if (box) box.style.setProperty("--mm-node-color", color);
+
+      const line = node.querySelector(":scope > line");
+      line?.setAttribute("stroke", color);
+
+      const circle = node.querySelector(":scope > circle");
+      if (circle) {
+        circle.setAttribute("stroke", color);
+        if (circle.getAttribute("fill") !== "var(--markmap-circle-open-bg)") {
+          circle.setAttribute("fill", color);
+        }
+      }
+    });
+
+    container.querySelectorAll("path.markmap-link").forEach((link) => {
+      const childPath = link.getAttribute("data-path");
+      const color = childPath ? colorByPath.get(childPath) : undefined;
+      if (color) link.setAttribute("stroke", color);
     });
   }
 
@@ -170,7 +297,7 @@ async function renderMarkdown(markdown: string) {
   if (!markmap) return;
   await markmap.setData(root);
   markmap.fit();
-  if (svgRef.value) applyNodeTheme(svgRef.value);
+  if (svgRef.value) applyNodeTheme(svgRef.value, props.theme);
 }
 
 let debounceTimer: ReturnType<typeof setTimeout> | undefined;
@@ -179,7 +306,7 @@ onMounted(() => {
   setTimeout(() => {
     if (svgRef.value) {
       markmap = createMarkmap(svgRef.value);
-      colorObserver = observeNodeTheme(svgRef.value);
+      colorObserver = observeNodeTheme(svgRef.value, () => props.theme);
     }
     queue(() => renderMarkdown(props.markdown));
   }, 500);
@@ -202,6 +329,15 @@ watch(
     debounceTimer = setTimeout(() => {
       queue(() => renderMarkdown(md));
     }, 150);
+  },
+);
+
+watch(
+  () => props.theme,
+  (theme) => {
+    // Cambiar de tema es solo recolorear: no hace falta pasar por
+    // markmap.setData()/fit(), así que no lo encolamos con los renders.
+    if (svgRef.value) applyNodeTheme(svgRef.value, theme);
   },
 );
 
@@ -228,7 +364,10 @@ function download(filename: string) {
     ],
     scripts: [
       ...(lastAssets.scripts ?? []),
-      { type: "iife" as const, data: { fn: exportThemeScript } },
+      {
+        type: "iife" as const,
+        data: { fn: exportThemeScript, getParams: () => [props.theme] },
+      },
     ],
   };
 

@@ -2,7 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
-html, body, #__nuxt {
+html,
+body,
+#__nuxt {
   height: 100%;
 }
 
@@ -13,8 +15,12 @@ body {
 
 /* Cuadrícula sutil tipo papel milimetrado para el lienzo del mapa */
 .paper-grid {
-  background-color: #F7F3EA;
-  background-image: radial-gradient(circle, rgba(27, 36, 48, 0.10) 1px, transparent 1px);
+  background-color: #f7f3ea;
+  background-image: radial-gradient(
+    circle,
+    rgba(27, 36, 48, 0.1) 1px,
+    transparent 1px
+  );
   background-size: 22px 22px;
 }
 
@@ -26,7 +32,7 @@ body {
   background: transparent;
 }
 .editor-scroll::-webkit-scrollbar-thumb {
-  background-color: #3A4759;
+  background-color: #3a4759;
   border-radius: 2px;
 }
 
