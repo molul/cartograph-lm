@@ -68,6 +68,7 @@ function onKeydown(event: KeyboardEvent) {
         >
           Nombre de archivo
         </label>
+
         <div
           class="flex items-stretch overflow-hidden rounded-sm border border-gray-500 focus-within:border-amber-500"
         >

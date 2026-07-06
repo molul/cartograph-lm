@@ -193,9 +193,11 @@ async function onCopyHtmlClick() {
               Centrar
             </button>
 
+            <div class="h-8 w-px mx-2 bg-gray-500" aria-hidden="true" />
+
             <button
               type="button"
-              class="rounded border border-gray-500 px-3 py-1.5 text-sm font-black text-paper/90 transition-colors hover:border-amber-500 hover:text-amber-400"
+              class="shrink-0 rounded border border-amber-500 px-3 py-1.5 font-sans text-sm font-bold text-amber-400 transition-colors hover:bg-amber-500 hover:text-ink"
               @click="onDownloadClick('html')"
             >
               Descargar HTML
@@ -203,11 +205,13 @@ async function onCopyHtmlClick() {
 
             <button
               type="button"
-              class="rounded border border-gray-500 px-3 py-1.5 font-sans text-sm font-bold text-paper/90 transition-colors hover:border-amber-500 hover:text-amber-400"
+              class="shrink-0 rounded border border-amber-500 px-3 py-1.5 font-sans text-sm font-bold text-amber-400 transition-colors hover:bg-amber-500 hover:text-ink"
               @click="onDownloadClick('txt')"
             >
               Descargar TXT
             </button>
+
+            <div class="h-8 w-px mx-2 bg-gray-500" aria-hidden="true" />
 
             <button
               type="button"
