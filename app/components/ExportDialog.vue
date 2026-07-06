@@ -69,7 +69,7 @@ function onKeydown(event: KeyboardEvent) {
           Nombre de archivo
         </label>
         <div
-          class="flex items-stretch overflow-hidden rounded-sm border border-ink-lighter focus-within:border-amber-500"
+          class="flex items-stretch overflow-hidden rounded-sm border border-gray-500 focus-within:border-amber-500"
         >
           <input
             ref="inputRef"
@@ -90,14 +90,14 @@ function onKeydown(event: KeyboardEvent) {
       <div class="mt-5 flex justify-end gap-2">
         <button
           type="button"
-          class="rounded-sm border border-ink-lighter px-3 py-1.5 font-sans text-xs font-medium text-paper/80 transition-colors hover:border-amber-500 hover:text-amber-400"
+          class="rounded border border-gray-500 px-3 py-1.5 font-sans text-sm font-bold text-paper/90 transition-colors hover:border-amber-500 hover:text-amber-400"
           @click="close"
         >
           Cancelar
         </button>
         <button
           type="button"
-          class="rounded-sm bg-amber-500 px-3 py-1.5 font-sans text-xs font-semibold text-ink transition-colors hover:bg-amber-400"
+          class="rounded bg-amber-500 px-3 py-1.5 font-sans text-sm font-bold text-ink transition-colors hover:bg-amber-400"
           @click="confirm"
         >
           Descargar

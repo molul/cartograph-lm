@@ -125,11 +125,11 @@ async function onCopyHtmlClick() {
       <!-- Panel izquierdo: fuente Markdown -->
       <section class="flex w-2/5 min-w-[320px] flex-col bg-ink">
         <div
-          class="flex shrink-0 items-center justify-between gap-3 border-b border-ink-lighter px-4 py-3"
+          class="flex shrink-0 items-center justify-between gap-3 border-b border-gray-500 px-4 py-3"
         >
           <div class="flex items-center gap-2 overflow-hidden">
             <span
-              class="font-sans text-[11px] uppercase tracking-[0.16em] text-amber-400"
+              class="font-sans text-sm uppercase tracking-[0.16em] text-amber-400"
               >Fuente</span
             >
             <span
@@ -139,7 +139,7 @@ async function onCopyHtmlClick() {
           </div>
           <button
             type="button"
-            class="shrink-0 rounded-sm border border-amber-500 px-3 py-1.5 font-sans text-xs font-medium text-amber-400 transition-colors hover:bg-amber-500 hover:text-ink"
+            class="shrink-0 rounded border border-amber-500 px-3 py-1.5 font-sans text-sm font-bold text-amber-400 transition-colors hover:bg-amber-500 hover:text-ink"
             @click="triggerUpload"
           >
             Cargar .md
@@ -167,46 +167,51 @@ async function onCopyHtmlClick() {
           class="flex shrink-0 items-center justify-between gap-3 border-b border-amber-500/40 bg-ink px-4 py-3"
         >
           <span
-            class="font-sans text-[11px] uppercase tracking-[0.16em] text-amber-400"
+            class="font-sans text-sm uppercase tracking-[0.16em] text-amber-400"
             >Mapa mental</span
           >
           <div class="flex items-center gap-2">
             <select
               v-model="theme"
-              class="rounded-sm border border-ink-lighter bg-ink px-2 py-1.5 font-sans text-xs font-medium text-paper/80 outline-none transition-colors hover:border-amber-500 hover:text-amber-400"
+              class="rounded border border-gray-500 bg-ink px-2 py-1.5 font-sans text-sm font-bold text-paper/90 outline-none transition-colors hover:border-amber-500 hover:text-amber-400 cursor-pointer h-[34px]"
             >
               <option
                 v-for="option in THEME_OPTIONS"
                 :key="option.value"
                 :value="option.value"
+                class="text-white font-semibold"
               >
                 {{ option.label }}
               </option>
             </select>
+
             <button
               type="button"
-              class="rounded-sm border border-ink-lighter px-3 py-1.5 font-sans text-xs font-medium text-paper/80 transition-colors hover:border-amber-500 hover:text-amber-400"
+              class="rounded border border-gray-500 px-3 py-1.5 font-sans text-sm font-bold text-paper/90 transition-colors hover:border-amber-500 hover:text-amber-400"
               @click="onFit"
             >
               Centrar
             </button>
+
             <button
               type="button"
-              class="rounded-sm bg-amber-500 px-3 py-1.5 font-sans text-xs font-semibold text-ink transition-colors hover:bg-amber-400"
+              class="rounded border border-gray-500 px-3 py-1.5 text-sm font-black text-paper/90 transition-colors hover:border-amber-500 hover:text-amber-400"
               @click="onDownloadClick('html')"
             >
               Descargar HTML
             </button>
+
             <button
               type="button"
-              class="rounded-sm bg-amber-500 px-3 py-1.5 font-sans text-xs font-semibold text-ink transition-colors hover:bg-amber-400"
+              class="rounded border border-gray-500 px-3 py-1.5 font-sans text-sm font-bold text-paper/90 transition-colors hover:border-amber-500 hover:text-amber-400"
               @click="onDownloadClick('txt')"
             >
               Descargar TXT
             </button>
+
             <button
               type="button"
-              class="rounded-sm border border-ink-lighter px-3 py-1.5 font-sans text-xs font-medium text-paper/80 transition-colors hover:border-amber-500 hover:text-amber-400"
+              class="rounded bg-amber-500 px-3 py-1.5 font-sans text-sm font-bold text-ink transition-colors hover:bg-amber-400"
               @click="onCopyHtmlClick"
             >
               {{
