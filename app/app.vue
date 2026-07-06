@@ -171,19 +171,30 @@ async function onCopyHtmlClick() {
             >Mapa mental</span
           >
           <div class="flex items-center gap-2">
-            <select
-              v-model="theme"
-              class="rounded border border-gray-500 bg-ink px-2 py-1.5 font-sans text-sm font-bold text-paper/90 outline-none transition-colors hover:border-amber-500 hover:text-amber-400 cursor-pointer h-[34px]"
-            >
-              <option
-                v-for="option in THEME_OPTIONS"
-                :key="option.value"
-                :value="option.value"
-                class="text-white font-semibold"
+            <div class="relative">
+              <select
+                v-model="theme"
+                class="appearance-none rounded border border-gray-500 bg-ink py-1.5 pl-2 pr-7 font-sans text-sm font-bold text-paper/90 outline-none transition-colors hover:border-amber-500 hover:text-amber-400 cursor-pointer h-[34px]"
               >
-                {{ option.label }}
-              </option>
-            </select>
+                <option
+                  v-for="option in THEME_OPTIONS"
+                  :key="option.value"
+                  :value="option.value"
+                  class="text-white font-semibold"
+                >
+                  {{ option.label }}
+                </option>
+              </select>
+              <svg
+                viewBox="0 0 24 24"
+                class="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-paper/80"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </div>
 
             <button
               type="button"
