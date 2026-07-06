@@ -37,9 +37,7 @@ const NODE_THEME_CSS = `
      foreignObject (con ancho/alto ya fijados por el layout de markmap) lo
      recorta por la derecha/abajo. El inset del box-shadow no afecta al
      tamaño, así que no se recorta. */
-  box-shadow:
-    inset 0 0 0 1px rgba(229, 231, 235, .8),
-    0 1px 2px rgba(0, 0, 0, .25);
+  box-shadow: inset 0 0 0 1px rgba(229, 231, 235, .8);
 }
 .markmap-link {
   stroke-opacity: .35;
