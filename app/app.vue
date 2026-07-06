@@ -13,9 +13,14 @@ const DEFAULT_MARKDOWN = `# Cartograph
 - Las listas anidadas crean sub-ramas
 - El **énfasis**, el \`código\` y los enlaces también se conservan
 
+## Personalización
+- Cambia el estilo de colores del mapa con el selector de arriba a la derecha
+- Pulsa "Centrar" para reencuadrar el mapa en la vista
+
 ## Exportar
-- Pulsa "Descargar HTML" para guardar un archivo autónomo
-- Ese archivo abre el mismo mapa interactivo en cualquier navegador
+- Pulsa "Descargar HTML" para guardar un archivo autónomo con el mapa interactivo
+- Pulsa "Descargar TXT" para guardar el mapa en html como fichero de texto, listo para abrir con cualquier editor
+- Pulsa "Copiar HTML" para copiar el HTML al portapapeles
 `;
 
 type ThemeId = "rainbow" | "byLevel" | "gray" | "grayByLevel";
