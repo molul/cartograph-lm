@@ -370,7 +370,7 @@ function fit() {
   });
 }
 
-function buildExportHtml() {
+function buildExportHtml(opts: { forClipboard?: boolean } = {}) {
   if (!lastRoot || !lastAssets) return null;
 
   // Por defecto fillTemplate carga d3 y markmap-view desde jsdelivr. Para no
@@ -392,6 +392,18 @@ function buildExportHtml() {
     styles: [
       ...(lastAssets.styles ?? []),
       { type: "style" as const, data: NODE_THEME_CSS },
+      // Al copiar el HTML (en vez de descargarlo como archivo) el usuario
+      // normalmente lo pega en un contenedor que no ocupa toda la ventana,
+      // así que #mindmap necesita un tamaño mínimo propio para no quedar
+      // colapsado a 0x0.
+      ...(opts.forClipboard
+        ? [
+            {
+              type: "style" as const,
+              data: "#mindmap { min-width: 600px; min-height: 400px; }",
+            },
+          ]
+        : []),
     ],
     scripts: [
       ...(lastAssets.scripts ?? []),
@@ -430,7 +442,7 @@ function download(filename: string, format: "html" | "txt" = "html") {
 }
 
 async function copyHtml() {
-  const html = buildExportHtml();
+  const html = buildExportHtml({ forClipboard: true });
   if (!html) return false;
   await navigator.clipboard.writeText(html);
   return true;
