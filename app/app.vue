@@ -48,6 +48,64 @@ let copyStateTimer: ReturnType<typeof setTimeout> | undefined;
 
 const displayName = computed(() => `${fileName.value}.md`);
 
+/**
+ * Algunos exports de NotebookLM añaden como primera línea un título "de
+ * más" (el nombre del documento en NotebookLM, no un nodo real del mapa
+ * mental). Lo identificamos porque, en ese caso, el título tiene una única
+ * rama de segundo nivel colgando de él — todo el contenido real vive dentro
+ * de ese único hijo. Si el título en cambio tiene varios hijos hermanos (el
+ * caso normal, como el markdown de ejemplo de esta app), lo dejamos tal
+ * cual porque sí es un título con estructura propia.
+ *
+ * Ejemplo que SÍ se recorta (un único hijo de segundo nivel):
+ *   # Prestaciones Esquema
+ *   ## Prestaciones Contributivas de la Seguridad Social
+ *     - Incapacidad Temporal
+ *     ...
+ *
+ * Ejemplo que NO se recorta (varios hijos de segundo nivel):
+ *   # Cartograph
+ *   ## Cómo usarlo
+ *   ## Estructura
+ *   ## Personalización
+ *   ## Exportar
+ */
+function stripRedundantTitle(text: string): string {
+  const lines = text.split("\n");
+
+  // La primera línea no vacía tiene que ser un encabezado para que pueda
+  // tratarse siquiera de un título "de más".
+  const firstLineIndex = lines.findIndex((line) => line.trim() !== "");
+  if (firstLineIndex === -1) return text;
+
+  const firstHeadingMatch = lines[firstLineIndex].match(/^(#{1,6})\s+\S/);
+  if (!firstHeadingMatch) return text;
+
+  const firstLevel = firstHeadingMatch[1].length;
+  const childLevel = firstLevel + 1;
+  const childHeadingRegex = new RegExp(`^#{${childLevel}}\\s+\\S`);
+  // Cualquier encabezado de nivel igual o "más alto" que el título original
+  // marca el final de su árbol (ya no estamos dentro de sus hijos).
+  const sameOrHigherLevelRegex = new RegExp(`^#{1,${firstLevel}}\\s+\\S`);
+
+  let secondLevelHeadingCount = 0;
+  for (let i = firstLineIndex + 1; i < lines.length; i++) {
+    const line = lines[i];
+    if (sameOrHigherLevelRegex.test(line)) break;
+    if (childHeadingRegex.test(line)) secondLevelHeadingCount++;
+  }
+
+  // Solo se considera título "de más" si hay EXACTAMENTE un hijo de
+  // segundo nivel. Cero hijos o varios hijos no encajan con el patrón.
+  if (secondLevelHeadingCount !== 1) return text;
+
+  const rest = lines.slice(firstLineIndex + 1);
+  // Si justo después del título hay una línea en blanco, la quitamos
+  // también para no dejar un hueco al principio del archivo.
+  if (rest[0]?.trim() === "") rest.shift();
+  return rest.join("\n");
+}
+
 function triggerUpload() {
   fileInput.value?.click();
 }
@@ -59,7 +117,8 @@ function onFileChange(event: Event) {
 
   const reader = new FileReader();
   reader.onload = () => {
-    markdown.value = String(reader.result ?? "");
+    const raw = String(reader.result ?? "");
+    markdown.value = stripRedundantTitle(raw);
     fileName.value = file.name.replace(/\.(md|markdown)$/i, "");
   };
   reader.readAsText(file);
@@ -214,9 +273,15 @@ async function onCopyHtmlClick() {
             <button
               type="button"
               class="shrink-0 rounded border border-amber-500 px-3 py-1.5 font-sans text-sm font-bold text-amber-400 transition-colors hover:bg-amber-500 hover:text-ink"
-              @click="onDownloadClick('html')"
+              @click="onCopyHtmlClick"
             >
-              Descargar HTML
+              {{
+                copyState === "copied"
+                  ? "¡Copiado!"
+                  : copyState === "error"
+                  ? "Error al copiar"
+                  : "Copiar HTML"
+              }}
             </button>
 
             <button
@@ -232,15 +297,9 @@ async function onCopyHtmlClick() {
             <button
               type="button"
               class="rounded bg-amber-500 px-3 py-1.5 font-sans text-sm font-bold text-ink transition-colors hover:bg-amber-400"
-              @click="onCopyHtmlClick"
+              @click="onDownloadClick('html')"
             >
-              {{
-                copyState === "copied"
-                  ? "¡Copiado!"
-                  : copyState === "error"
-                    ? "Error al copiar"
-                    : "Copiar HTML"
-              }}
+              Descargar HTML
             </button>
           </div>
         </div>

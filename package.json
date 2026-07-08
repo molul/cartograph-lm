@@ -19,5 +19,8 @@
   },
   "devDependencies": {
     "@nuxtjs/tailwindcss": "^6.12.2"
+  },
+  "overrides": {
+    "esbuild": "0.19.12"
   }
 }
